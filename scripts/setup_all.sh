@@ -2,15 +2,14 @@
 set -eu
 
 sudo apt-add-repository -y ppa:ondrej/php
-#sudo apt update
+sudo apt update
 echo "mysql-server-5.7 mysql-server/root_password password honomara"       |sudo debconf-set-selections -
 echo "mysql-server-5.7 mysql-server/root_password_again password honomara" |sudo debconf-set-selections -
 
 sudo apt install -y python3-pip \
   postgresql-9.5 postgresql-server-dev-9.5 \
   mysql-server-5.7 mysql-client-5.7 \
-  apache2 libapache2-mod-php7.3 \
-  php7.3 php7.3-cli php7.3-common php7.3-pgsql php7.3-mysql \
+  apache2 \
   language-pack-ja mecab libmecab-dev mecab-ipadic-utf8 swig \
 
 
@@ -19,7 +18,8 @@ sudo -H python3 -m pip install --upgrade psycopg2
 sudo -H python3 -m pip install --upgrade mysql-connector-python
 sudo -H python3 -m pip install --upgrade mecab-python3
 sudo -H python3 -m pip install --upgrade flask flask-sqlalchemy flask-wtf flask-bootstrap flask-login flask-bcrypt
-
+sudo -H python3 -m pip install --upgrade flask-rest-jsonapi
+sudo -H python3 -m pip install --upgrade flask-cors
 
 # configure postgresql (enable password login for psql command)
 sudo sed -i 's/^local\s*all\s*all\s*peer/local\tall\tall\tmd5/g' \

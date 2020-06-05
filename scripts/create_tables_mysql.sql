@@ -1,35 +1,34 @@
-
-CREATE TABLE IF NOT EXISTS member (
-  `id`          INT          PRIMARY KEY AUTO_INCREMENT,
-  `family_name` VARCHAR(30)  NOT NULL,
-  `family_kana` VARCHAR(30),
-  `first_name`  VARCHAR(30)  NOT NULL,
-  `first_kana`  VARCHAR(30),
-  `show_name`   VARCHAR(30)  NOT NULL,
-  `kana`        VARCHAR(60)  , -- for index
-  `year`        INT          NOT NULL,
-  `sex`         INT          NOT NULL DEFAULT 0, -- 0=man, 1=woman
-  `visible`     BOOL         NOT NULL DEFAULT true
+CREATE TABLE IF NOT EXISTS person (
+  `id`            INT          PRIMARY KEY AUTO_INCREMENT,
+  `family_name`   VARCHAR(30)  NOT NULL,
+  `family_kana`   VARCHAR(30),
+  `first_name`    VARCHAR(30), 
+  `first_kana`    VARCHAR(30),
+  `show_name`     VARCHAR(30)  NOT NULL,
+  `entrance_year` INT          NOT NULL,
+  `gender`        VARCHAR(10),
+  `visible`       BOOLEAN      NOT NULL DEFAULT true,
+  INDEX (entrance_year, family_kana, first_kana)
 );
 
 CREATE TABLE IF NOT EXISTS training (
-  `id`      INT           PRIMARY KEY AUTO_INCREMENT,
-  `date`    DATE          NOT NULL,
-  `place`   VARCHAR(30)   NOT NULL,
-  `weather` VARCHAR(30),
-  `title`   VARCHAR(100)  NOT NULL,
-  `comment` TEXT,
-  INDEX USING BTREE (date),
+  `id`            INT           PRIMARY KEY AUTO_INCREMENT,
+  `date`          DATE          NOT NULL,
+  `type`          VARCHAR(30)   NOT NULL,
+  `weather`       VARCHAR(30),
+  `title`         TEXT          NOT NULL,
+  `comment`       TEXT,
+  INDEX (date),
   FULLTEXT (title) WITH PARSER ngram,
   FULLTEXT (comment) WITH PARSER ngram
 );
 
 CREATE TABLE IF NOT EXISTS restaurant (
-  id               INT PRIMARY KEY AUTO_INCREMENT,
-  name  VARCHAR(30) NOT NULL, -- TODO: change column name to `name`
-  place            VARCHAR(30),
-  score FLOAT NOT NULL DEFAULT 0,
-  comment TEXT
+  `id`            INT PRIMARY KEY AUTO_INCREMENT,
+  `name`          VARCHAR(30) NOT NULL, -- TODO: change column name to `name`
+  `place`         VARCHAR(30),
+  `score`        FLOAT NOT NULL DEFAULT 0,
+  `comment`       TEXT
 );
 
 CREATE TABLE IF NOT EXISTS after (
@@ -37,57 +36,98 @@ CREATE TABLE IF NOT EXISTS after (
   `date`          DATE NOT NULL,
   `after_stage`   INT NOT NULL DEFAULT 1,
   `restaurant_id` INT NOT NULL, -- FOREIGN KEY (`restaurant_id`) REFERENCES restaurant(`id`),
-  `title`         VARCHAR(100) NOT NULL,
+  `title`         TEXT NOT NULL,
   `comment`       TEXT,
-  INDEX USING BTREE(`date`),
+  INDEX (`date`),
   FULLTEXT (title) WITH PARSER ngram,
   FULLTEXT (comment) WITH PARSER ngram
 );
 
 CREATE TABLE IF NOT EXISTS  after_participant (
-  member_id   INT NOT NULL, -- FOREIGN KEY REFERENCES member(id)
-  after_id    INT NOT NULL  -- FOREIGN KEY REFERENCES after(id)
+  `person_id`      INT NOT NULL, -- FOREIGN KEY REFERENCES person(id)
+  `after_id`      INT NOT NULL  -- FOREIGN KEY REFERENCES after(id)
 );
 
 
 CREATE TABLE IF NOT EXISTS  training_participant (
-  member_id   INT NOT NULL, -- FOREIGN KEY REFERENCES member(id)
-  training_id INT NOT NULL  -- FOREIGN KEY REFERENCES training(id)
+  `person_id`     INT NOT NULL, -- FOREIGN KEY REFERENCES person(id)
+  `training_id`   INT NOT NULL  -- FOREIGN KEY REFERENCES training(id)
 );
 
 
-CREATE TABLE IF NOT EXISTS race_base (
-  `race_name`      VARCHAR(60) PRIMARY KEY,
-  `race_name_kana` VARCHAR(60),
-  `prefecture`     VARCHAR(30),
-  `comment`        TEXT
+CREATE TABLE IF NOT EXISTS competition (
+  `id`            INT PRIMARY KEY AUTO_INCREMENT,
+  `name`         VARCHAR(60) NOT NULL,
+  `kana`         VARCHAR(60),
+  `show_name`    VARCHAR(60) NOT NULL,
+  `place`        VARCHAR(30),
+  `comment`      TEXT
 );
 
+
+
+CREATE TABLE IF NOT EXISTS course (
+  `id`           INT PRIMARY KEY AUTO_INCREMENT,
+  `competition_id` INT NOT NULL, -- FOREIGN KEY REFERENCES competition(id)
+  `type`  VARCHAR(30) NOT NULL DEFAULT 'ロード', -- ['ロード', 'トラック', 'トレイル', '時間走', 'リレマラ']
+  `show_name`    VARCHAR(30),
+  `time`         INT,   -- running time in seconds for type 'time' or 'relay'
+  `distance`     FLOAT, -- running distance in meter
+  `elevation`    INT, -- cumulative elevation in meter
+  `comment`      TEXT
+);
 
 CREATE TABLE IF NOT EXISTS race (
   `id`        INT PRIMARY KEY AUTO_INCREMENT,
-  `race_name` VARCHAR(60) NOT NULL,
+  `course_id` INT NOT NULL, -- FOREIGN KEY REFERENCES course(id)
   `date`      DATE NOT NULL,
   `comment`   TEXT
 );
 
-
-CREATE TABLE IF NOT EXISTS race_type (
-  `id`         INT PRIMARY KEY AUTO_INCREMENT,
-  `race_type`  VARCHAR(30) NOT NULL DEFAULT 'road',
-  `show_name`  VARCHAR(30),
-  `ranking`    INT NOT NULL DEFAULT 100,
-  `duration`   FLOAT,
-  `distance`   FLOAT,
-  `comment`    TEXT
-);
-
-
 CREATE TABLE IF NOT EXISTS result (
-  `member_id`     INT NOT NULL, -- FOREIGN KEY REFERENCES member(id)
-  `race_type_id`  INT NOT NULL, -- FOREIGN KEY REFERENCES race_type(id)
-  `race_id`       INT NOT NULL, -- FOREIGN KEY REFERENCES race(id)
-  `result`        INT NOT NULL,
+  `id`            INT PRIMARY KEY AUTO_INCREMENT,
+  `race_id`       INT NOT NULL,      -- FOREIGN KEY REFERENCES race(id)
+  `time`          INT, -- net time in mili seconds
+  `distance`      INT, -- running distance
   `comment`       TEXT
 );
 
+CREATE TABLE IF NOT EXISTS race_participant (
+  `result_id`     INT NOT NULL, -- FOREIGN KEY REFERENCES result(id)
+  `person_id`     INT NOT NULL -- FOREIGN KEY REFERENCES person(id)
+);
+
+
+CREATE TABLE ekiden_competition (
+  `id`            INT PRIMARY KEY AUTO_INCREMENT,
+  `name`         VARCHAR(60),
+  `kana`         VARCHAR(60),
+  `show_name`    VARCHAR(60) NOT NULL,
+  `place`        VARCHAR(30),
+  `comment`      TEXT
+);
+
+CREATE TABLE ekiden_race (
+  `id`                    INT PRIMARY KEY AUTO_INCREMENT,
+  `ekiden_competition_id` INT NOT NULL, -- FOREIGN KEY REFERENCES ekiden_competition(id)
+  `sections`              JSON NOT NULL,
+  `date`                  DATE NOT NULL,
+  `comment`               TEXT,
+  INDEX (date)
+);
+
+CREATE TABLE ekiden_team (
+  `id`              INT PRIMARY KEY AUTO_INCREMENT,
+  `ekiden_race_id`  INT NOT NULL, -- FOREIGN KEY REFERENCES ekiden_race(id)
+  `team_name`       VARCHAR(60) NOT NULL,
+  `comment`         TEXT
+);
+
+
+CREATE TABLE ekiden_result (
+  `ekiden_team_id`  INT NOT NULL,
+  `section`         INT NOT NULL,
+  `person_id`       INT NOT NULL,
+  `time_gross`      INT NOT NULL,
+  `comment`         TEXT
+);
